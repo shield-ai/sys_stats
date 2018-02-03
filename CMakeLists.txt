@@ -4,6 +4,8 @@ project(sys_stats)
 add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  shield_msgs
 )
 
 catkin_package(
@@ -22,7 +24,17 @@ add_library(sys_stats
   include/sys_stats/sys_stats.h
 )
 
-install(TARGETS ${PROJECT_NAME}
+# Wrap with node - the usual defaults
+add_executable(${PROJECT_NAME}_node src/sys_stats_node.cpp)
+target_link_libraries(${PROJECT_NAME}_node
+  sys_stats
+  ${catkin_LIBRARIES}
+)
+set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME ${PROJECT_NAME} PREFIX "")
+add_dependencies(${PROJECT_NAME}_node ${catkin_EXPORTED_TARGETS})
+
+
+install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
