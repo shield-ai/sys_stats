@@ -356,7 +356,8 @@ bool SysStats::get_processes()
   }
 
   // remove nonmarked processes
-  std::remove_if(std::begin(processes), std::end(processes), [](const Process& p) { return p.mark == false; });
+  processes.erase(std::remove_if(std::begin(processes), std::end(processes),
+              [](const Process& p) { return p.mark == false; }), std::end(processes));
 
   std::sort(std::begin(processes), std::end(processes), [](const Process& p1, const Process& p2) {
     return p1.cpu_use < p2.cpu_use;
@@ -434,7 +435,8 @@ void SysStats::get_threads_for_process(Process& p, float uptime_diff)
   }
 
   // remove nonmarked threads
-  std::remove_if(std::begin(p.threads), std::end(p.threads), [](const Thread& t) { return t.mark == false; });
+  p.threads.erase(std::remove_if(std::begin(p.threads), std::end(p.threads),
+              [](const Thread& t) { return t.mark == false; }), std::end(p.threads));
 
   if (closedir(dirp) == -1)
     return;
@@ -707,7 +709,8 @@ bool SysStats::getInterfaceData()
 
   file.close();
 
-  std::remove_if(std::begin(interface), std::end(interface), [](const Net& iface) { return iface.mark == false; });
+  interface.erase(std::remove_if(std::begin(interface), std::end(interface),
+              [](const Net& iface) { return iface.mark == false; }), std::end(interface));
 
   return true;
 }
@@ -812,7 +815,8 @@ bool SysStats::getDiskData()
     disk.free_space = freeSpaceForMount(disk.mount_point);
   }
 
-  std::remove_if(std::begin(disks), std::end(disks), [](const Disk& disk) { return disk.mark == false; });
+  disks.erase(std::remove_if(std::begin(disks), std::end(disks),
+              [](const Disk& disk) { return disk.mark == false; }), std::end(disks));
 
   return true;
 }
