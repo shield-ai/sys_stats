@@ -147,7 +147,7 @@ void calculateCpu(P& p, float ticks_elapsed)
   auto prev_tot = p.previous_uptime.utime + p.previous_uptime.stime;
   auto curr_tot = p.uptime.utime + p.uptime.stime;
 
-  p.cpu_use = (curr_tot <= prev_tot) ? 0 : ((curr_tot - prev_tot) / ticks_elapsed * 100);
+  p.cpu_use = (curr_tot <= prev_tot) ? 0 : (float(curr_tot - prev_tot) / ticks_elapsed * 100);
 }
 
 seconds operator-(const seconds& s1, const seconds& s2)
