@@ -160,7 +160,7 @@ seconds operator-(const seconds& s1, const seconds& s2)
 
 /// Parses the procStat file
 template <typename P>
-void parseProcStat(P& p, std::string proc_file, int pid, bool read_cmdline, float uptime_diff)
+bool parseProcStat(P& p, std::string proc_file, int pid, bool read_cmdline, float uptime_diff)
 {
   static std::stringstream ss;
   static std::string stats_line;
@@ -170,10 +170,13 @@ void parseProcStat(P& p, std::string proc_file, int pid, bool read_cmdline, floa
 
   std::ifstream stats{proc_file};
   if (stats.is_open() == false)
-    return;
+    return false;
 
   getline(stats, stats_line);
   stats.close();
+
+  if (stats_line.length() < 50)
+    return false;
 
   // find the program name
   auto begin = stats_line.find('(');
@@ -199,7 +202,7 @@ void parseProcStat(P& p, std::string proc_file, int pid, bool read_cmdline, floa
       std::ifstream file{ss.str()};
       // ignore on errors
       if (file.is_open() == false)
-        return;
+        return false;
 
       getline(file, cmd_line);
       file.close();
@@ -244,9 +247,11 @@ void parseProcStat(P& p, std::string proc_file, int pid, bool read_cmdline, floa
   {
     calculateCpu(p, uptime_diff);
   }
+
+  return true;
 }
 
-Thread::Thread() : cpu_use{0}, previous_uptime{0, 0}, uptime{0, 0}
+Thread::Thread() : cpu_use{0}, previous_uptime{0, 0}, uptime{0, 0}, mark{false}
 {
 }
 
@@ -274,7 +279,7 @@ int Thread::id()
   return tid;
 }
 
-Process::Process() : cpu_use{0}, mem_use{0}, previous_uptime{0, 0}, uptime{0, 0}
+Process::Process() : cpu_use{0}, mem_use{0}, previous_uptime{0, 0}, uptime{0, 0}, mark{false}
 {
 }
 
@@ -384,14 +389,17 @@ void SysStats::get_process(long int pid)
   }
 
   auto& p = *pit;
-  p.mark = true;
   p.previous_uptime = p.uptime;
 
   // read the stats
   ss.str("");
   ss << "/proc/" << pid << "/stat";
 
-  parseProcStat<Process>(p, ss.str(), pid, true, this->uptime_diff);
+  auto parse_results = parseProcStat<Process>(p, ss.str(), pid, true, this->uptime_diff);
+  if (parse_results == false)
+    return;
+
+  p.mark = true;
   get_threads_for_process(p, this->uptime_diff);
 
   p.rss *= pageSize();
@@ -458,14 +466,17 @@ void SysStats::get_thread(Process& p, long int tid, float uptime_diff)
   }
 
   auto& t = *tit;
-  t.mark = true;
   t.previous_uptime = t.uptime;
 
   // read the stats
   ss.str("");
   ss << "/proc/" << tid << "/stat";
 
-  parseProcStat<Thread>(t, ss.str(), tid, true, uptime_diff);
+  auto parse_result = parseProcStat<Thread>(t, ss.str(), tid, true, uptime_diff);
+  if (parse_result == false)
+    return;
+
+  t.mark = true;
   calculateCpu(t, uptime_diff);
 }
 

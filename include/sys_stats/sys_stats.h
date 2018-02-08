@@ -53,7 +53,7 @@ struct Thread
   bool mark;
 
   template <typename P>
-  friend void parseProcStat(P& p, std::string proc_file, int pid, bool read_cmdline, float uptime_diff);
+  friend bool parseProcStat(P& p, std::string proc_file, int pid, bool read_cmdline, float uptime_diff);
   template <typename P>
   friend void calculateCpu(P& p, float ticks_elapsed);
 };
@@ -93,7 +93,7 @@ struct Process
   bool mark;
 
   template <typename P>
-  friend void parseProcStat(P& p, std::string proc_file, int pid, bool read_cmdline, float uptime_diff);
+  friend bool parseProcStat(P& p, std::string proc_file, int pid, bool read_cmdline, float uptime_diff);
   template <typename P>
   friend void calculateCpu(P& p, float ticks_elapsed);
 };
