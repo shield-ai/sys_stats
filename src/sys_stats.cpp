@@ -470,7 +470,7 @@ void SysStats::get_thread(Process& p, long int tid, float uptime_diff)
 
   // read the stats
   ss.str("");
-  ss << "/proc/" << tid << "/stat";
+  ss << "/proc/" << p.pid << "/task/" << tid << "/stat";
 
   auto parse_result = parseProcStat<Thread>(t, ss.str(), tid, true, uptime_diff);
   if (parse_result == false)
