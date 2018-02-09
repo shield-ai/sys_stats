@@ -365,7 +365,7 @@ bool SysStats::get_processes()
               [](const Process& p) { return p.mark == false; }), std::end(processes));
 
   std::sort(std::begin(processes), std::end(processes), [](const Process& p1, const Process& p2) {
-    return p1.cpu_use < p2.cpu_use;
+    return p1.cpu_use > p2.cpu_use;
   });
   if (closedir(dirp) == -1)
     return false;
