@@ -307,10 +307,8 @@ int Process::id()
   return pid;
 }
 
-SysStats::SysStats()
+SysStats::SysStats() : previous_uptime(readuptime()), coretemp_path(get_hwmon_path())
 {
-  this->previous_uptime = readuptime();
-  this->coretemp_path = get_hwmon_path();
 }
 
 /// Queries everything and fills the structure
@@ -361,8 +359,9 @@ bool SysStats::get_processes()
   }
 
   // remove nonmarked processes
-  processes.erase(std::remove_if(std::begin(processes), std::end(processes),
-              [](const Process& p) { return p.mark == false; }), std::end(processes));
+  processes.erase(
+      std::remove_if(std::begin(processes), std::end(processes), [](const Process& p) { return p.mark == false; }),
+      std::end(processes));
 
   std::sort(std::begin(processes), std::end(processes), [](const Process& p1, const Process& p2) {
     return p1.cpu_use > p2.cpu_use;
@@ -443,8 +442,9 @@ void SysStats::get_threads_for_process(Process& p, float uptime_diff)
   }
 
   // remove nonmarked threads
-  p.threads.erase(std::remove_if(std::begin(p.threads), std::end(p.threads),
-              [](const Thread& t) { return t.mark == false; }), std::end(p.threads));
+  p.threads.erase(
+      std::remove_if(std::begin(p.threads), std::end(p.threads), [](const Thread& t) { return t.mark == false; }),
+      std::end(p.threads));
 
   if (closedir(dirp) == -1)
     return;
@@ -503,7 +503,7 @@ bool SysStats::getMemory()
   while (!feof(fp))
   {
     unsigned long value;
-    if (fscanf(fp, "%s %ld %s", field, &value, unit) != 3)
+    if (fscanf(fp, "%511s %lu %31s", field, &value, unit) != 3)
       continue;
 
     // clang-format off
@@ -685,7 +685,7 @@ bool SysStats::getInterfaceData()
     line = line.substr(colon + 1);
     unsigned long recv_bytes, sent_bytes, dummy;
     sscanf(line.c_str(),
-           " %ld %ld %ld %ld %ld %ld %ld %ld %ld",
+           " %lu %lu %lu %lu %lu %lu %lu %lu %lu",
            &recv_bytes,
            &dummy,
            &dummy,
@@ -720,8 +720,9 @@ bool SysStats::getInterfaceData()
 
   file.close();
 
-  interface.erase(std::remove_if(std::begin(interface), std::end(interface),
-              [](const Net& iface) { return iface.mark == false; }), std::end(interface));
+  interface.erase(
+      std::remove_if(std::begin(interface), std::end(interface), [](const Net& iface) { return iface.mark == false; }),
+      std::end(interface));
 
   return true;
 }
@@ -754,7 +755,7 @@ bool SysStats::getDiskData()
   {
     unsigned long sectors_read, sectors_written, dummy;
     sscanf(line.c_str(),
-           " %ld %ld %s %ld %ld %ld %ld %ld %ld %ld",
+           " %lu %lu %63s %lu %lu %lu %lu %lu %lu %lu",
            &dummy,
            &dummy,
            devicename,
@@ -826,8 +827,8 @@ bool SysStats::getDiskData()
     disk.free_space = freeSpaceForMount(disk.mount_point);
   }
 
-  disks.erase(std::remove_if(std::begin(disks), std::end(disks),
-              [](const Disk& disk) { return disk.mark == false; }), std::end(disks));
+  disks.erase(std::remove_if(std::begin(disks), std::end(disks), [](const Disk& disk) { return disk.mark == false; }),
+              std::end(disks));
 
   return true;
 }

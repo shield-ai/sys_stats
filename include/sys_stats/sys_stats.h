@@ -33,9 +33,13 @@ struct Thread
   friend struct SysStats;
 
   /// static interface (to reuse the same code for threads/processes)
+  // cppcheck-suppress unusedPrivateFunction
   void reset(std::string name);
+  // cppcheck-suppress unusedPrivateFunction
   void setCmdLine(std::string name);
+  // cppcheck-suppress unusedPrivateFunction
   const std::string& name() const;
+  // cppcheck-suppress unusedPrivateFunction
   int id();
   long rss;
 
@@ -73,9 +77,13 @@ struct Process
  private:
   friend struct SysStats;
 
+  // cppcheck-suppress unusedPrivateFunction
   void reset(std::string name);
+  // cppcheck-suppress unusedPrivateFunction
   void setCmdLine(std::string cmdline);
+  // cppcheck-suppress unusedPrivateFunction
   const std::string& name() const;
+  // cppcheck-suppress unusedPrivateFunction
   int id();
   long rss;
 
@@ -107,6 +115,10 @@ struct Cpu
 
 struct Net
 {
+  Net()
+  {
+  }
+
   std::string interface;
   float read;
   float write;
@@ -120,6 +132,10 @@ struct Net
 
 struct Disk
 {
+  Disk()
+  {
+  }
+
   std::string disk_name;
   float read;                // Bytes per second
   float write;               // Bytes per second
@@ -146,15 +162,22 @@ struct SysStats
  private:
   friend bool get_sys_stats(SysStats*);
 
+  // cppcheck-suppress unusedPrivateFunction
   bool get_processes();
+  // cppcheck-suppress unusedPrivateFunction
   void get_process(long int pid);
 
+  // cppcheck-suppress unusedPrivateFunction
   void getuptime();
+  // cppcheck-suppress unusedPrivateFunction
   bool getMemory();
+  // cppcheck-suppress unusedPrivateFunction
   bool getCpuInfo();
   std::vector<float> getPerCoreUsage();
   float getCpuTemperature(int processor_id);
+  // cppcheck-suppress unusedPrivateFunction
   bool getInterfaceData();
+  // cppcheck-suppress unusedPrivateFunction
   bool getDiskData();
 
   uptime previous_uptime;
