@@ -22,6 +22,7 @@ include_directories(
 add_library(sys_stats
   src/sys_stats.cpp
   include/sys_stats/sys_stats.h
+  include/sys_stats/serialization.h
 )
 
 # Wrap with node - the usual defaults

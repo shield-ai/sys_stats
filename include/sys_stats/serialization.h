@@ -98,6 +98,8 @@ struct Serializer<sys_stats::SysStats>
   {
     // must match order in message definition
     stream.next(m.cpu_use_total);
+    stream.next(m.mem_use_total);
+    stream.next(m.swap_use_total);
     stream.next(m.processes);
     stream.next(m.cpu);
     stream.next(m.interface);
