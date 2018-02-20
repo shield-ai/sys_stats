@@ -36,6 +36,17 @@ uptime readuptime()
   return uptime;
 }
 
+/// Converts the value with the SI prefix to the base value
+static unsigned long long prefixedUnitToValue(unsigned long long value, char unit)
+{
+  // clang-format off
+  return value * (unit == 'k' ? 1024 :
+    unit == 'M' ? 1024UL * 1024 :
+    unit == 'G' ? 1024UL * 1024 * 1024 :
+    unit == 'T' ? 1024UL * 1024 * 1024 * 1024 : 1);
+  // clang-format on
+}
+
 /// gets the hwmon path of the coretemp sensor
 std::string get_hwmon_path()
 {
@@ -307,7 +318,8 @@ int Process::id()
   return pid;
 }
 
-SysStats::SysStats() : previous_uptime(readuptime()), coretemp_path(get_hwmon_path())
+SysStats::SysStats()
+  : mem_use_total(0), swap_use_total(0), previous_uptime(readuptime()), coretemp_path(get_hwmon_path())
 {
 }
 
@@ -506,29 +518,49 @@ bool SysStats::getMemory()
     if (fscanf(fp, "%511s %lu %31s", field, &value, unit) != 3)
       continue;
 
-    // clang-format off
     if (strcmp(field, "MemTotal:") == 0)
     {
-      this->total_memory =
-          value * (unit[0] == 'k' ? 1024 :
-                   unit[0] == 'M' ? 1024UL * 1024 :
-                   unit[0] == 'G' ? 1024UL * 1024 * 1024 :
-                   unit[0] == 'T' ? 1024UL * 1024 * 1024 * 1024 : 1);
+      this->total_memory = prefixedUnitToValue(value, unit[0]);
     }
     else if (strcmp(field, "MemFree:") == 0)
     {
-      this->free_memory =
-          value * (unit[0] == 'k' ? 1024 :
-                   unit[0] == 'M' ? 1024UL * 1024 :
-                   unit[0] == 'G' ? 1024UL * 1024 * 1024 :
-                   unit[0] == 'T' ? 1024UL * 1024 * 1024 * 1024 : 1);
+      this->free_memory = prefixedUnitToValue(value, unit[0]);
     }
-    // clang-format on
-
-    break;
+    else if (strcmp(field, "Buffers:") == 0)
+    {
+      this->buffers = prefixedUnitToValue(value, unit[0]);
+    }
+    else if (strcmp(field, "Cached:") == 0)
+    {
+      this->cached = prefixedUnitToValue(value, unit[0]);
+    }
+    else if (strcmp(field, "Shmem:") == 0)
+    {
+      this->shmem = prefixedUnitToValue(value, unit[0]);
+    }
+    else if (strcmp(field, "SReclaimable:") == 0)
+    {
+      this->sreclaimable = prefixedUnitToValue(value, unit[0]);
+    }
+    else if (strcmp(field, "SwapTotal:") == 0)
+    {
+      this->total_swap = prefixedUnitToValue(value, unit[0]);
+    }
+    else if (strcmp(field, "SwapFree:") == 0)
+    {
+      this->free_swap = prefixedUnitToValue(value, unit[0]);
+    }
   }
 
   fclose(fp);
+
+  if (this->total_memory != 0)
+  {
+    auto used_mem = this->total_memory - this->free_memory;
+    used_mem -= (this->buffers + this->cached + this->sreclaimable - this->shmem);
+    this->mem_use_total = (float(used_mem) / this->total_memory) * 100.0f;
+    this->swap_use_total = 100 - (float(this->free_swap) / this->total_swap) * 100.0f;
+  }
 
   return this->total_memory == 0;
 }

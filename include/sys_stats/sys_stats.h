@@ -156,6 +156,8 @@ struct SysStats
   std::vector<Net> interface;
   std::vector<Disk> disks;
   float cpu_use_total;
+  float mem_use_total;
+  float swap_use_total;
 
   SysStats();
 
@@ -185,6 +187,12 @@ struct SysStats
   float uptime_diff;
   unsigned long long total_memory;
   unsigned long long free_memory;
+  unsigned long long buffers;
+  unsigned long long cached;
+  unsigned long long shmem;
+  unsigned long long sreclaimable;
+  unsigned long long total_swap;
+  unsigned long long free_swap;
   std::string coretemp_path;
 
   decltype(std::chrono::steady_clock::now()) prev_iftime;
