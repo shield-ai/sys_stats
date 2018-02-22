@@ -13,6 +13,7 @@
 TOPIC_TRAITS_FROM_MESSAGE(sys_stats::Cpu, shield_msgs::Cpu)
 TOPIC_TRAITS_FROM_MESSAGE(sys_stats::Net, shield_msgs::Net)
 TOPIC_TRAITS_FROM_MESSAGE(sys_stats::Disk, shield_msgs::Disk)
+TOPIC_TRAITS_FROM_MESSAGE(sys_stats::Wifi, shield_msgs::Wifi)
 TOPIC_TRAITS_FROM_MESSAGE(sys_stats::Thread, shield_msgs::Thread)
 TOPIC_TRAITS_FROM_MESSAGE(sys_stats::Process, shield_msgs::Process)
 TOPIC_TRAITS_FROM_MESSAGE(sys_stats::SysStats, shield_msgs::SysStats)
@@ -91,6 +92,21 @@ struct Serializer<sys_stats::Disk>
 };
 
 template <>
+struct Serializer<sys_stats::Wifi>
+{
+  ROS_DECLARE_ALLINONE_SERIALIZER template <typename Stream, typename T>
+  inline static void allInOne(Stream& stream, T m)
+  {
+    // must match order in message definition
+    stream.next(m.ssid);
+    stream.next(m.frequency);
+    stream.next(m.bitrate);
+    stream.next(m.link_quality);
+    stream.next(m.signal_level);
+  }
+};
+
+template <>
 struct Serializer<sys_stats::SysStats>
 {
   ROS_DECLARE_ALLINONE_SERIALIZER template <typename Stream, typename T>
@@ -104,6 +120,7 @@ struct Serializer<sys_stats::SysStats>
     stream.next(m.cpu);
     stream.next(m.interface);
     stream.next(m.disks);
+    stream.next(m.wifi);
   }
 };
 }

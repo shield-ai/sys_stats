@@ -149,17 +149,40 @@ struct Disk
   bool mark;
 };
 
+struct Wifi
+{
+  std::string interface;
+  std::string ssid;
+  float frequency;     // Hz
+  float bitrate;       // b/s
+  float link_quality;  // %
+  float signal_level;  // dBm
+
+  explicit Wifi(int driver_socket);
+
+ private:
+  friend struct SysStats;
+  // cppcheck-suppress unusedPrivateFunction
+  bool queryDriver();
+  int driver_socket;
+  float qual;    // from /proc/net/wireless
+  int max_qual;  // from the driver
+  bool mark;
+};
+
 struct SysStats
 {
   std::vector<Process> processes;
   std::vector<Cpu> cpu;
   std::vector<Net> interface;
   std::vector<Disk> disks;
+  std::vector<Wifi> wifi;
   float cpu_use_total;
   float mem_use_total;
   float swap_use_total;
 
   SysStats();
+  ~SysStats();
 
  private:
   friend bool get_sys_stats(SysStats*);
@@ -181,6 +204,8 @@ struct SysStats
   bool getInterfaceData();
   // cppcheck-suppress unusedPrivateFunction
   bool getDiskData();
+  // cppcheck-suppress unusedPrivateFunction
+  bool getWifiData();
 
   uptime previous_uptime;
   uptime current_uptime;
@@ -203,6 +228,8 @@ struct SysStats
 
   std::vector<unsigned long> previous_cpu_total;
   std::vector<unsigned long> previous_cpu_idle;
+  // Socket for querying the wifi driver
+  int driver_socket;
 };
 
 // Upon return, `stats` will be populated, or function will return
