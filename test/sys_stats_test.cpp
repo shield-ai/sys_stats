@@ -110,9 +110,14 @@ TEST(SysStatsTest, checkDiskSpace) {
     get_sys_stats(&s);
 
     ASSERT_GT(s.disks.size(), 0);
-    // flaky
-    ASSERT_GT(s.disks[0].free_space, 0);
-    ASSERT_GT(s.disks[0].disk_name.size(), 0);
+    for (const auto& d: s.disks)
+    {
+        ASSERT_GT(s.disks[0].disk_name.size(), 0);
+        if (s.disks[0].free_space > 0)
+            return;
+    }
+    // flaky, depends on single disk with some space
+    ASSERT_EQ(true, false);
 }
 
 int main(int argc, char** argv)
