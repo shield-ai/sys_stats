@@ -11,7 +11,7 @@
 
 TEST(SysStatsTest, checksCpuUsage) {
     sys_stats::SysStats s;
-    get_sys_stats(&s);
+    s.update();
     ASSERT_GT(s.cpu.size(), 0);
     //
     // wait until there has been some CPU work
@@ -19,7 +19,7 @@ TEST(SysStatsTest, checksCpuUsage) {
     while (s.cpu[0].cpu_usage == 0)
     {
         usleep(10000);
-        get_sys_stats(&s);
+        s.update();
     }
 
     ASSERT_GT(s.cpu[0].cpu_usage, 0);
@@ -30,7 +30,7 @@ TEST(SysStatsTest, checksCpuUsage) {
 
 TEST(SysStatsTest, checkMemUsage) {
     sys_stats::SysStats s;
-    get_sys_stats(&s);
+    s.update();
     ASSERT_GT(s.mem_use_total, 0);
     ASSERT_GE(s.swap_use_total, 0);
 }
@@ -51,7 +51,7 @@ void cpu_thread ()
 
 TEST(SysStatsTest, checkProcParsing) {
     sys_stats::SysStats s;
-    get_sys_stats(&s);
+    s.update();
 
     ASSERT_GT(s.processes.size(), 0);
     
@@ -69,7 +69,7 @@ TEST(SysStatsTest, checkProcParsing) {
         while (n < 10000)
             n *= 2;
 
-        get_sys_stats(&s);
+        s.update();
         self = std::find_if(std::begin(s.processes),
                 std::end(s.processes), [pid](const sys_stats::Process& p) { return p.pid == pid; });
         ASSERT_NE(self, std::end(s.processes));
@@ -80,7 +80,7 @@ TEST(SysStatsTest, checkProcParsing) {
 
     std::thread t(cpu_thread);
     pthread_setname_np(t.native_handle(), "test thread");
-    get_sys_stats(&s);
+    s.update();
     self = std::find_if(std::begin(s.processes),
             std::end(s.processes), [pid](const sys_stats::Process& p) { return p.pid == pid; });
     ASSERT_NE(self, std::end(s.processes));
@@ -89,7 +89,7 @@ TEST(SysStatsTest, checkProcParsing) {
     while ((*self).threads[0].cpu_use == 0)
     {
         usleep(10000);
-        get_sys_stats(&s);
+        s.update();
         self = std::find_if(std::begin(s.processes),
                 std::end(s.processes), [pid](const sys_stats::Process& p) { return p.pid == pid; });
         ASSERT_NE(self, std::end(s.processes));
@@ -98,7 +98,7 @@ TEST(SysStatsTest, checkProcParsing) {
 
     exit_thread = true;
     t.join();
-    get_sys_stats(&s);
+    s.update();
     self = std::find_if(std::begin(s.processes),
             std::end(s.processes), [pid](const sys_stats::Process& p) { return p.pid == pid; });
     ASSERT_NE(self, std::end(s.processes));
@@ -107,7 +107,7 @@ TEST(SysStatsTest, checkProcParsing) {
 
 TEST(SysStatsTest, checkDiskSpace) {
     sys_stats::SysStats s;
-    get_sys_stats(&s);
+    s.update();
 
     ASSERT_GT(s.disks.size(), 0);
     for (const auto& d: s.disks)

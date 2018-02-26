@@ -184,27 +184,19 @@ struct SysStats
   SysStats();
   ~SysStats();
 
- private:
-  friend bool get_sys_stats(SysStats*);
+  bool update();
 
-  // cppcheck-suppress unusedPrivateFunction
+ private:
   bool get_processes();
-  // cppcheck-suppress unusedPrivateFunction
   void get_process(long int pid);
 
-  // cppcheck-suppress unusedPrivateFunction
   void getuptime();
-  // cppcheck-suppress unusedPrivateFunction
   bool getMemory();
-  // cppcheck-suppress unusedPrivateFunction
   bool getCpuInfo();
   std::vector<float> getPerCoreUsage();
   float getCpuTemperature(int processor_id);
-  // cppcheck-suppress unusedPrivateFunction
   bool getInterfaceData();
-  // cppcheck-suppress unusedPrivateFunction
   bool getDiskData();
-  // cppcheck-suppress unusedPrivateFunction
   bool getWifiData();
 
   uptime previous_uptime;
