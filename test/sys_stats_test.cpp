@@ -5,7 +5,8 @@
 #include <atomic>
 #include <thread>
 #include <pthread.h>
-#include "gtest/gtest.h"
+#include <ros/ros.h>
+#include <gtest/gtest.h>
 #include "sys_stats/sys_stats.h"
 
 TEST(SysStatsTest, checksCpuUsage) {
@@ -112,4 +113,11 @@ TEST(SysStatsTest, checkDiskSpace) {
     // flaky
     ASSERT_GT(s.disks[0].free_space, 0);
     ASSERT_GT(s.disks[0].disk_name.size(), 0);
+}
+
+int main(int argc, char** argv)
+{
+  testing::InitGoogleTest(&argc, argv);
+
+  return RUN_ALL_TESTS();
 }
