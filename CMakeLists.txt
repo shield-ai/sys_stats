@@ -46,7 +46,3 @@ install(DIRECTORY include/${PROJECT_NAME}/
   FILES_MATCHING PATTERN "*.h"
 )
 
-enable_testing()
-add_subdirectory(googletest)
-include(GoogleTest)
-add_subdirectory(test)
