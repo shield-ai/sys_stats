@@ -116,7 +116,7 @@ TEST(SysStatsTest, checkDiskSpace)
   ASSERT_GT(s.disks.size(), 0);
   for (const auto& d : s.disks)
   {
-    ASSERT_GT(s.disks[0].disk_name.size(), 0);
+    ASSERT_GT(d.disk_name.size(), 0);
     if (d.free_space > 0)
       return;
   }
