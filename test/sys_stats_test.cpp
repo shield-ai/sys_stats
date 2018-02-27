@@ -117,7 +117,7 @@ TEST(SysStatsTest, checkDiskSpace)
   for (const auto& d : s.disks)
   {
     ASSERT_GT(s.disks[0].disk_name.size(), 0);
-    if (s.disks[0].free_space > 0)
+    if (d.free_space > 0)
       return;
   }
   // flaky, depends on single disk with some space
