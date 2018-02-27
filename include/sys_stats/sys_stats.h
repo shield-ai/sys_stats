@@ -223,12 +223,6 @@ struct SysStats
   // Socket for querying the wifi driver
   int driver_socket;
 };
-
-// Upon return, `stats` will be populated, or function will return
-// false if error. All stats, especially the per-second statistics,
-// will be averages since this function was last called. It is acceptable
-// for the first call to this function to return false.
-bool get_sys_stats(SysStats* stats);
-}
+} //namespace sys_stats
 
 #endif
