@@ -17,7 +17,7 @@ class SysStatsWrapper
 
   void getStats(const ros::TimerEvent&)
   {
-    if (sys_stats::get_sys_stats(&stats_))
+    if (stats_.update())
     {
       pub_.publish(stats_);
     }
