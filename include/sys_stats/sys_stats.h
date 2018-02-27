@@ -223,6 +223,6 @@ struct SysStats
   // Socket for querying the wifi driver
   int driver_socket;
 };
-} //namespace sys_stats
+}  // namespace sys_stats
 
 #endif
