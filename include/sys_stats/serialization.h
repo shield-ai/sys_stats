@@ -98,6 +98,7 @@ struct Serializer<sys_stats::Wifi>
   inline static void allInOne(Stream& stream, T m)
   {
     // must match order in message definition
+    stream.next(m.interface);
     stream.next(m.ssid);
     stream.next(m.frequency);
     stream.next(m.bitrate);
