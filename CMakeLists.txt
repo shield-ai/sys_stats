@@ -34,12 +34,7 @@ target_link_libraries(${PROJECT_NAME}_node
 set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME ${PROJECT_NAME} PREFIX "")
 add_dependencies(${PROJECT_NAME}_node ${catkin_EXPORTED_TARGETS})
 
-# Test
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-catkin_add_gtest(sys_stats_test test/sys_stats_test.cpp)
-target_link_libraries(sys_stats_test sys_stats)
 
-# Install
 install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

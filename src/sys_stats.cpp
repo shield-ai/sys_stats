@@ -336,22 +336,22 @@ SysStats::~SysStats()
 }
 
 /// Queries everything and fills the structure
-bool SysStats::update()
+bool get_sys_stats(SysStats* stats)
 {
-  if (!this->getCpuInfo())
+  if (!stats->getCpuInfo())
     return false;
-  if (!this->getInterfaceData())
-    return false;
-
-  if (!this->getDiskData())
+  if (!stats->getInterfaceData())
     return false;
 
-  this->getMemory();
-  this->getuptime();
-  if (!this->get_processes())
+  if (!stats->getDiskData())
     return false;
 
-  if (!this->getWifiData())
+  stats->getMemory();
+  stats->getuptime();
+  if (!stats->get_processes())
+    return false;
+
+  if (!stats->getWifiData())
     return false;
 
   return true;
