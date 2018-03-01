@@ -127,6 +127,7 @@ long inline freeSpaceForMount(const std::string& mount_point)
 
   if (statvfs(mount_point.c_str(), &stat) != 0)
   {
+    std::cout << "statvfs(" << mount_point << ") failed\n";
     return 0;
   }
 

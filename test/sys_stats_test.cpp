@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <iterator>
 #include <vector>
+#include <fstream>
+#include <iostream>
 #include <atomic>
 #include <thread>
 #include <pthread.h>
@@ -120,7 +122,54 @@ TEST(SysStatsTest, checkDiskSpace)
     if (d.free_space > 0)
       return;
   }
-  // flaky, depends on single disk with some space
+
+  // If we've reached here, no disk was found with any space
+  std::cout << "\nFAIL: Could not find a single disk with nonzero size\n\n";
+
+  std::cout << "/proc/diskstats:\n\n";
+  std::ifstream diskstats("/proc/diskstats");
+  ASSERT_EQ(diskstats.is_open(), true);
+  std::string line;
+  if (diskstats.is_open())
+  {
+    while (std::getline(diskstats, line))
+    {
+      std::cout << '\t' << line << '\n';
+    }
+    diskstats.close();
+  }
+
+  std::cout << "\n\n/proc/mounts:\n\n";
+  std::ifstream mounts("/proc/mounts");
+  ASSERT_EQ(mounts.is_open(), true);
+  if (mounts.is_open())
+  {
+    while (getline(mounts, line))
+    {
+      std::cout << '\t' << line << '\n';
+    }
+    mounts.close();
+  }
+
+  std::cout << "\n\ndf:\n\n";
+  FILE* fp;
+  char buffer[256];
+  fp = popen("df", "r");
+  if (fp != NULL)
+  {
+    while (fgets(buffer, sizeof(buffer), fp) != NULL)
+      std::cout << '\t' << buffer;
+    pclose(fp);
+  }
+
+  std::cout << "\n\nSysStats:\n\n";
+  for (const sys_stats::Disk& d : s.disks)
+  {
+    std::cout << '\t' << d.disk_name << "\tsize is " << d.free_space << "\n";
+  }
+
+  std::cout << std::endl;
+
   ASSERT_EQ(true, false);
 }
 
