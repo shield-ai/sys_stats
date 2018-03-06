@@ -5,7 +5,6 @@ add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  shield_msgs
 )
 
 catkin_package(
