@@ -351,8 +351,9 @@ bool get_sys_stats(SysStats* stats)
   if (!stats->get_processes())
     return false;
 
-  if (!stats->getWifiData())
-    return false;
+  // Querying the wifi driver seems have a chance to panic the kernel and cause a hard lock up
+  //if (!stats->getWifiData())
+  //  return false;
 
   return true;
 }
