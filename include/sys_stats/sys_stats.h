@@ -199,6 +199,8 @@ private:
     std::vector<nvmlProcessInfo_t> process_infos;
     Gpu& gpu_stats;
     bool initialized;
+
+    friend struct SysStats;
 };
 
 struct SysStats
@@ -211,6 +213,7 @@ struct SysStats
   float cpu_use_total;
   float mem_use_total;
   float swap_use_total;
+  Gpu gpu_stats;
 
   SysStats();
   ~SysStats();
@@ -237,6 +240,8 @@ struct SysStats
   bool getDiskData();
   // cppcheck-suppress unusedPrivateFunction
   bool getWifiData();
+  // cppcheck-suppress unusedPrivateFunction
+  bool getGpuInfo();
 
   uptime previous_uptime;
   uptime current_uptime;
@@ -261,6 +266,8 @@ struct SysStats
   std::vector<unsigned long> previous_cpu_idle;
   // Socket for querying the wifi driver
   int driver_socket;
+  // Object to query the GPU
+  GpuQuery gpu_collector;
 };
 
 // Upon return, `stats` will be populated, or function will return

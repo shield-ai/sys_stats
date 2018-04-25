@@ -325,7 +325,7 @@ int Process::id()
 }
 
 SysStats::SysStats()
-  : mem_use_total(0), swap_use_total(0), previous_uptime(readuptime()), coretemp_path(get_hwmon_path())
+  : mem_use_total(0), swap_use_total(0), previous_uptime(readuptime()), coretemp_path(get_hwmon_path()), gpu_collector(gpu_stats)
 {
   this->driver_socket = socket(AF_INET, SOCK_DGRAM, 0);
 }
@@ -351,6 +351,9 @@ bool get_sys_stats(SysStats* stats)
   stats->getuptime();
   if (!stats->get_processes())
     return false;
+
+  if (!stats->getGpuInfo())
+      return false;
 
   // Querying the wifi driver seems have a chance to panic the kernel and cause a hard lock up
   //if (!stats->getWifiData())
@@ -952,6 +955,11 @@ bool SysStats::getWifiData()
   return true;
 }
 
+bool SysStats::getGpuInfo()
+{
+    return this->gpu_collector.getProcesses();
+}
+
 bool Wifi::queryDriver()
 {
   static iwreq driver_rq;
@@ -1090,6 +1098,7 @@ GpuQuery::~GpuQuery()
 
 bool GpuQuery::getProcesses ()
 {
+    gpu_stats.process_list.clear();
     for(auto& device: this->devices)
     {
         if (!this->getProcessesForDevice(device))
@@ -1136,10 +1145,9 @@ bool GpuQuery::getProcessesForDevice (nvmlDevice_t device)
 
     // transform them into our list
     // TODO: stl tranform here
-    gpu_stats.process_list.resize(this->process_infos.size());
     int i = 0;
     for (const auto& info: this->process_infos)
-        gpu_stats.process_list[i++] = sys_stats::GpuProcess{ info.pid, info.usedGpuMemory };
+        gpu_stats.process_list.push_back(sys_stats::GpuProcess{ info.pid, info.usedGpuMemory });
 
     return true;
 }
