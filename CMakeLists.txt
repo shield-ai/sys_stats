@@ -25,6 +25,8 @@ add_library(sys_stats
   include/sys_stats/serialization.h
 )
 
+target_link_libraries(sys_stats /usr/lib/x86_64-linux-gnu/stubs/libnvidia-ml.so)
+
 # Wrap with node - the usual defaults
 add_executable(${PROJECT_NAME}_node src/sys_stats_node.cpp)
 target_link_libraries(${PROJECT_NAME}_node
