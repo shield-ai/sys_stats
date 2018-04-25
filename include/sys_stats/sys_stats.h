@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <chrono>
+#include <nvml.h>
 
 namespace sys_stats
 {
@@ -168,6 +169,28 @@ struct Wifi
   float qual;    // from /proc/net/wireless
   int max_qual;  // from the driver
   bool mark;
+};
+
+struct GpuProcess
+{
+    unsigned int pid;
+    unsigned long memory;
+};
+
+struct Gpu
+{
+    float total_load;  // percent
+    float total_mem;   // percent
+    float power;       // Watts
+    float temperature; // degrees C
+    std::vector<GpuProcess> process_list;
+
+    Gpu();
+private:
+    void getProcesses();
+    // todo: support multiple devices
+    nvmlDevice_t device;
+    std::vector<nvmlProcessInfo_t> process_infos;
 };
 
 struct SysStats

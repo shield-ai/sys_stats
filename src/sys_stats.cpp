@@ -18,6 +18,7 @@
 #include <sys/statvfs.h>
 #include <sys/socket.h>
 #include <linux/wireless.h>
+#include <nvml.h>
 #include "sys_stats/sys_stats.h"
 
 namespace sys_stats
@@ -1015,4 +1016,48 @@ bool Wifi::queryDriver()
 Wifi::Wifi(int driver_sock) : driver_socket(driver_sock), max_qual(0)
 {
 }
+
+Gpu::Gpu()
+{
+    // todo: initialize NVML
+}
+
+void Gpu::getProcesses ()
+{
+    // get the number of the processes running
+    unsigned int numProcesses;
+    auto ret = nvmlDeviceGetComputeRunningProcesses(this->device,
+            &numProcesses, nullptr);
+
+    if (ret != NVML_ERROR_INSUFFICIENT_SIZE &&
+        ret != NVML_SUCCESS)
+    {
+        return;
+    }
+
+    // always allocate more in case new processes are spawned
+    do 
+    {
+        if (numProcesses * 2 > this->process_infos.capacity())
+        {
+            this->process_infos.resize(numProcesses * 2);
+        }
+
+        numProcesses = this->process_infos.capacity();
+        ret = nvmlDeviceGetComputeRunningProcesses(this->device,
+                &numProcesses, &this->process_infos[0]);
+    }
+    while (ret == NVML_ERROR_INSUFFICIENT_SIZE); // resize and retry on error
+
+    if (ret != NVML_SUCCESS)
+        return;
+
+    // transform them into our list
+    // TODO: stl tranform here
+    this->process_list.resize(this->process_infos.size());
+    int i = 0;
+    for (const auto& info: this->process_infos)
+        this->process_list[i++] = sys_stats::GpuProcess{ info.pid, info.usedGpuMemory };
+}
+
 }
