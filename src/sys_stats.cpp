@@ -1017,13 +1017,25 @@ Wifi::Wifi(int driver_sock) : driver_socket(driver_sock), max_qual(0)
 {
 }
 
-Gpu::Gpu()
+GpuQuery::GpuQuery(Gpu& gpu_stats): gpu_stats{gpu_stats}
 {
-    // todo: initialize NVML
+    this->initialized = nvmlInit() == NVML_SUCCESS;
 }
 
-void Gpu::getProcesses ()
+GpuQuery::~GpuQuery()
 {
+    // although documentation indicates that for the
+    // backwards compatibility we're can call nvmlShutdown
+    // when nvmlInit failed, there's a little point anyway
+    if (this->initialized)
+        static_cast<void>(nvmlShutdown());
+}
+
+void GpuQuery::getProcesses ()
+{
+    if (!this->initialized)
+        return;
+
     // get the number of the processes running
     unsigned int numProcesses;
     auto ret = nvmlDeviceGetComputeRunningProcesses(this->device,
@@ -1054,10 +1066,10 @@ void Gpu::getProcesses ()
 
     // transform them into our list
     // TODO: stl tranform here
-    this->process_list.resize(this->process_infos.size());
+    gpu_stats.process_list.resize(this->process_infos.size());
     int i = 0;
     for (const auto& info: this->process_infos)
-        this->process_list[i++] = sys_stats::GpuProcess{ info.pid, info.usedGpuMemory };
+        gpu_stats.process_list[i++] = sys_stats::GpuProcess{ info.pid, info.usedGpuMemory };
 }
 
 }

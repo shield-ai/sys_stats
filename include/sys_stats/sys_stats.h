@@ -184,13 +184,20 @@ struct Gpu
     float power;       // Watts
     float temperature; // degrees C
     std::vector<GpuProcess> process_list;
+};
 
-    Gpu();
+struct GpuQuery
+{
 private:
+    GpuQuery(Gpu& gpu_stats);
+    ~GpuQuery();
     void getProcesses();
+
     // todo: support multiple devices
     nvmlDevice_t device;
     std::vector<nvmlProcessInfo_t> process_infos;
+    Gpu& gpu_stats;
+    bool initialized;
 };
 
 struct SysStats
