@@ -191,7 +191,7 @@ struct GpuQuery
 private:
     GpuQuery(Gpu& gpu_stats);
     ~GpuQuery();
-    void getProcesses();
+    bool getProcesses();
 
     // todo: support multiple devices
     nvmlDevice_t device;

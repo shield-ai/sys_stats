@@ -1031,10 +1031,10 @@ GpuQuery::~GpuQuery()
         static_cast<void>(nvmlShutdown());
 }
 
-void GpuQuery::getProcesses ()
+bool GpuQuery::getProcesses ()
 {
     if (!this->initialized)
-        return;
+        return true; // ignore if the nvml failed to initialize
 
     // get the number of the processes running
     unsigned int numProcesses;
@@ -1044,7 +1044,8 @@ void GpuQuery::getProcesses ()
     if (ret != NVML_ERROR_INSUFFICIENT_SIZE &&
         ret != NVML_SUCCESS)
     {
-        return;
+        // this shouldn't happen
+        return false;
     }
 
     // always allocate more in case new processes are spawned
@@ -1062,7 +1063,7 @@ void GpuQuery::getProcesses ()
     while (ret == NVML_ERROR_INSUFFICIENT_SIZE); // resize and retry on error
 
     if (ret != NVML_SUCCESS)
-        return;
+        return false;
 
     // transform them into our list
     // TODO: stl tranform here
@@ -1070,6 +1071,8 @@ void GpuQuery::getProcesses ()
     int i = 0;
     for (const auto& info: this->process_infos)
         gpu_stats.process_list[i++] = sys_stats::GpuProcess{ info.pid, info.usedGpuMemory };
+
+    return true;
 }
 
 }
