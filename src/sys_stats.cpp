@@ -1020,6 +1020,63 @@ Wifi::Wifi(int driver_sock) : driver_socket(driver_sock), max_qual(0)
 GpuQuery::GpuQuery(Gpu& gpu_stats): gpu_stats{gpu_stats}
 {
     this->initialized = nvmlInit() == NVML_SUCCESS;
+
+    if (!this->initialized)
+        return;
+
+    unsigned int unit_count;
+    this->initialized = nvmlUnitGetCount(&unit_count) == NVML_SUCCESS;
+
+    if (!this->initialized)
+    {
+        nvmlShutdown();
+        return;
+    }
+
+    for (int i = 0; i < unit_count; i++)
+    {
+        nvmlUnit_t unit;
+        if (nvmlUnitGetHandleByIndex(i, &unit) != NVML_SUCCESS)
+        {
+            this->initialized = false;
+            nvmlShutdown();
+            break;
+        }
+
+        // TODO: unlike the nvmlGetComputeRunningProcesses,
+        // the documentation for nvmlUnitGetDevices *does not* indicate
+        // that we can get the number of the devices passing
+        // the NULL for the last argument and calling it again with the
+        // array big enough to hold the deviceCount. So, we'll start with
+        // the reasonable size of the nvmlDevice_t and try to guess,
+        // if it fails, we'll increase the vector size
+        // I have a suspicion that the better approach should also work,
+        // but I can't test it.
+        std::vector<nvmlDevice_t> unit_devices;
+        unit_devices.resize(1);
+        unsigned int deviceCount = unit_devices.capacity();
+
+        nvmlReturn_t ret;
+        do
+        {
+            ret = nvmlUnitGetDevices(unit, &deviceCount, &unit_devices[0]);
+            if (ret == NVML_ERROR_INSUFFICIENT_SIZE)
+                unit_devices.reserve(deviceCount);
+        }
+        while (ret != NVML_ERROR_INSUFFICIENT_SIZE);
+        unit_devices.resize(deviceCount);
+
+        if (ret != NVML_SUCCESS)
+        {
+            this->initialized = false;
+            nvmlShutdown();
+            return;
+        }
+
+        // copy the devices for this unit
+        this->devices.insert(std::end(this->devices),
+                std::begin(unit_devices), std::end(unit_devices));
+    }
 }
 
 GpuQuery::~GpuQuery()
@@ -1033,12 +1090,23 @@ GpuQuery::~GpuQuery()
 
 bool GpuQuery::getProcesses ()
 {
+    for(auto& device: this->devices)
+    {
+        if (!this->getProcessesForDevice(device))
+            return false;
+    }
+
+    return true;
+}
+
+bool GpuQuery::getProcessesForDevice (nvmlDevice_t device)
+{
     if (!this->initialized)
         return true; // ignore if the nvml failed to initialize
 
     // get the number of the processes running
     unsigned int numProcesses;
-    auto ret = nvmlDeviceGetComputeRunningProcesses(this->device,
+    auto ret = nvmlDeviceGetComputeRunningProcesses(device,
             &numProcesses, nullptr);
 
     if (ret != NVML_ERROR_INSUFFICIENT_SIZE &&
@@ -1053,14 +1121,15 @@ bool GpuQuery::getProcesses ()
     {
         if (numProcesses * 2 > this->process_infos.capacity())
         {
-            this->process_infos.resize(numProcesses * 2);
+            this->process_infos.reserve(numProcesses * 2);
         }
 
         numProcesses = this->process_infos.capacity();
-        ret = nvmlDeviceGetComputeRunningProcesses(this->device,
+        ret = nvmlDeviceGetComputeRunningProcesses(device,
                 &numProcesses, &this->process_infos[0]);
     }
     while (ret == NVML_ERROR_INSUFFICIENT_SIZE); // resize and retry on error
+    this->process_infos.resize(numProcesses);
 
     if (ret != NVML_SUCCESS)
         return false;

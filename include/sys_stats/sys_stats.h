@@ -192,9 +192,10 @@ private:
     GpuQuery(Gpu& gpu_stats);
     ~GpuQuery();
     bool getProcesses();
+    bool getProcessesForDevice(nvmlDevice_t device);
 
     // todo: support multiple devices
-    nvmlDevice_t device;
+    std::vector<nvmlDevice_t> devices;
     std::vector<nvmlProcessInfo_t> process_infos;
     Gpu& gpu_stats;
     bool initialized;
