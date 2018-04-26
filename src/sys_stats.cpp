@@ -1105,14 +1105,15 @@ bool GpuQuery::getProcesses ()
             it != std::end(this->devices); i++, it++)
     {
         // gather as much as you can
-        static_cast<void>(this->getProcessesForDevice(*it, this->gpu_stats[i]));
+        static_cast<void>(this->getProcessesForDevice(*it,
+                   this->gpu_stats[i].process_list));
     }
 
     return true;
 }
 
 bool GpuQuery::getProcessesForDevice (nvmlDevice_t device,
-        Gpu& device_stats)
+        std::vector<GpuProcess>& process_list)
 {
     if (!this->initialized)
         return true; // ignore if the nvml failed to initialize
@@ -1150,9 +1151,9 @@ bool GpuQuery::getProcessesForDevice (nvmlDevice_t device,
 
     // transform them into our list
     // TODO: stl tranform here
-    device_stats.process_list.clear();
+    process_list.clear();
     for (const auto& info: this->process_infos)
-        device_stats.process_list.push_back(sys_stats::GpuProcess{ info.pid, info.usedGpuMemory });
+        process_list.push_back(sys_stats::GpuProcess{ info.pid, info.usedGpuMemory });
 
     return true;
 }
