@@ -179,10 +179,11 @@ struct GpuProcess
 
 struct Gpu
 {
-    float total_load;  // percent
-    float total_mem;   // percent
-    float power;       // Watts
-    float temperature; // degrees C
+    float total_load;   // percent
+    float total_mem;    // percent
+    float power;        // Watts
+    float temperature;  // degrees C
+    unsigned int clock; // MHz
     std::vector<GpuProcess> process_list;
 };
 
@@ -191,9 +192,11 @@ struct GpuQuery
 private:
     GpuQuery(std::vector<Gpu>& gpu_stats);
     ~GpuQuery();
-    bool getProcesses();
+    bool queryDevices();
     bool getProcessesForDevice(nvmlDevice_t device,
             std::vector<GpuProcess>& process_list);
+    bool getDeviceStats(nvmlDevice_t device,
+            Gpu& stats);
 
     // todo: support multiple devices
     std::vector<nvmlDevice_t> devices;

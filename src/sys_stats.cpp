@@ -957,7 +957,7 @@ bool SysStats::getWifiData()
 
 bool SysStats::getGpuInfo()
 {
-    return this->gpu_collector.getProcesses();
+    return this->gpu_collector.queryDevices();
 }
 
 bool Wifi::queryDriver()
@@ -1098,15 +1098,64 @@ GpuQuery::~GpuQuery()
         static_cast<void>(nvmlShutdown());
 }
 
-bool GpuQuery::getProcesses ()
+bool GpuQuery::queryDevices ()
 {
     int i = 0;
     for(auto it = std::begin(this->devices);
             it != std::end(this->devices); i++, it++)
     {
-        // gather as much as you can
+        // gather as much as you can, do not fail, just continue
         static_cast<void>(this->getProcessesForDevice(*it,
                    this->gpu_stats[i].process_list));
+
+        static_cast<void>(this->getDeviceStats(*it, this->gpu_stats[i]));
+    }
+
+    return true;
+}
+
+
+bool GpuQuery::getDeviceStats(nvmlDevice_t device,
+        Gpu& stats)
+{
+    stats.power = 0;
+    unsigned int power_mw;
+    auto ret = nvmlDeviceGetPowerUsage(device, &power_mw);
+
+    if (ret == NVML_SUCCESS)
+    {
+        // DeviceGetPowerUsage returns power in mwatts
+        stats.power = power_mw / 1000.0;
+    }
+
+    nvmlMemory_t memory;
+    stats.total_mem = 0;
+
+    ret = nvmlDeviceGetMemoryInfo(device, &memory);
+    if (ret == NVML_SUCCESS)
+    {
+        stats.total_mem = (static_cast<float>(memory.used) / memory.total) * 100.0f;
+    }
+
+    unsigned int temperature;
+    stats.temperature = 0;
+    ret = nvmlDeviceGetTemperature(device, NVML_TEMPERATURE_GPU, &temperature);
+    if (ret == NVML_SUCCESS)
+    {
+        stats.temperature = temperature;
+    }
+
+    stats.clock = 0;
+    ret = nvmlDeviceGetClock(device, NVML_CLOCK_GRAPHICS, NVML_CLOCK_ID_CURRENT,
+            &stats.clock);
+
+    stats.total_load = 0;
+    nvmlUtilization_t utilization;
+    ret = nvmlDeviceGetUtilizationRates(device, &utilization);
+
+    if (ret == NVML_SUCCESS)
+    {
+        stats.total_load = utilization.gpu;
     }
 
     return true;
