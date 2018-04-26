@@ -1025,7 +1025,7 @@ Wifi::Wifi(int driver_sock) : driver_socket(driver_sock), max_qual(0)
 {
 }
 
-GpuQuery::GpuQuery(Gpu& gpu_stats): gpu_stats{gpu_stats}
+GpuQuery::GpuQuery(std::vector<Gpu>& gpu_stats): gpu_stats{gpu_stats}
 {
     this->initialized = nvmlInit() == NVML_SUCCESS;
 
@@ -1085,6 +1085,8 @@ GpuQuery::GpuQuery(Gpu& gpu_stats): gpu_stats{gpu_stats}
         this->devices.insert(std::end(this->devices),
                 std::begin(unit_devices), std::end(unit_devices));
     }
+
+    this->gpu_stats.resize(this->devices.size());
 }
 
 GpuQuery::~GpuQuery()
@@ -1098,17 +1100,19 @@ GpuQuery::~GpuQuery()
 
 bool GpuQuery::getProcesses ()
 {
-    gpu_stats.process_list.clear();
-    for(auto& device: this->devices)
+    int i = 0;
+    for(auto it = std::begin(this->devices);
+            it != std::end(this->devices); i++, it++)
     {
-        if (!this->getProcessesForDevice(device))
-            return false;
+        // gather as much as you can
+        static_cast<void>(this->getProcessesForDevice(*it, this->gpu_stats[i]));
     }
 
     return true;
 }
 
-bool GpuQuery::getProcessesForDevice (nvmlDevice_t device)
+bool GpuQuery::getProcessesForDevice (nvmlDevice_t device,
+        Gpu& device_stats)
 {
     if (!this->initialized)
         return true; // ignore if the nvml failed to initialize
@@ -1138,6 +1142,7 @@ bool GpuQuery::getProcessesForDevice (nvmlDevice_t device)
                 &numProcesses, &this->process_infos[0]);
     }
     while (ret == NVML_ERROR_INSUFFICIENT_SIZE); // resize and retry on error
+    this->process_infos.clear();
     this->process_infos.resize(numProcesses);
 
     if (ret != NVML_SUCCESS)
@@ -1145,9 +1150,9 @@ bool GpuQuery::getProcessesForDevice (nvmlDevice_t device)
 
     // transform them into our list
     // TODO: stl tranform here
-    int i = 0;
+    device_stats.process_list.clear();
     for (const auto& info: this->process_infos)
-        gpu_stats.process_list.push_back(sys_stats::GpuProcess{ info.pid, info.usedGpuMemory });
+        device_stats.process_list.push_back(sys_stats::GpuProcess{ info.pid, info.usedGpuMemory });
 
     return true;
 }

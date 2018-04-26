@@ -189,15 +189,15 @@ struct Gpu
 struct GpuQuery
 {
 private:
-    GpuQuery(Gpu& gpu_stats);
+    GpuQuery(std::vector<Gpu>& gpu_stats);
     ~GpuQuery();
     bool getProcesses();
-    bool getProcessesForDevice(nvmlDevice_t device);
+    bool getProcessesForDevice(nvmlDevice_t device, Gpu& device_stats);
 
     // todo: support multiple devices
     std::vector<nvmlDevice_t> devices;
     std::vector<nvmlProcessInfo_t> process_infos;
-    Gpu& gpu_stats;
+    std::vector<Gpu>& gpu_stats;
     bool initialized;
 
     friend struct SysStats;
@@ -213,7 +213,7 @@ struct SysStats
   float cpu_use_total;
   float mem_use_total;
   float swap_use_total;
-  Gpu gpu_stats;
+  std::vector<Gpu> gpu_stats;
 
   SysStats();
   ~SysStats();
