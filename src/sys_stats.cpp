@@ -1155,7 +1155,9 @@ bool GpuQuery::getProcessesForDevice (nvmlDevice_t device,
             this->process_infos.reserve(numProcesses * 2);
         }
 
-        numProcesses = this->process_infos.capacity();
+        this->process_infos.resize(numProcesses * 2);
+
+        numProcesses = this->process_infos.size();
         ret = nvmlDeviceGetComputeRunningProcesses(device,
                 &numProcesses, &this->process_infos[0]);
     }
