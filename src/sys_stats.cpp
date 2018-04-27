@@ -1032,8 +1032,8 @@ GpuQuery::GpuQuery(std::vector<Gpu>& gpu_stats): gpu_stats{gpu_stats}
     if (!this->initialized)
         return;
 
-    unsigned int unit_count;
-    this->initialized = nvmlUnitGetCount(&unit_count) == NVML_SUCCESS;
+    unsigned int device_count;
+    this->initialized = nvmlDeviceGetCount(&device_count) == NVML_SUCCESS;
 
     if (!this->initialized)
     {
@@ -1041,49 +1041,17 @@ GpuQuery::GpuQuery(std::vector<Gpu>& gpu_stats): gpu_stats{gpu_stats}
         return;
     }
 
-    for (int i = 0; i < unit_count; i++)
+    for (int i = 0; i < device_count; i++)
     {
-        nvmlUnit_t unit;
-        if (nvmlUnitGetHandleByIndex(i, &unit) != NVML_SUCCESS)
+        nvmlDevice_t device;
+        if (nvmlDeviceGetHandleByIndex(i, &device) != NVML_SUCCESS)
         {
             this->initialized = false;
             nvmlShutdown();
             break;
         }
 
-        // TODO: unlike the nvmlGetComputeRunningProcesses,
-        // the documentation for nvmlUnitGetDevices *does not* indicate
-        // that we can get the number of the devices passing
-        // the NULL for the last argument and calling it again with the
-        // array big enough to hold the deviceCount. So, we'll start with
-        // the reasonable size of the nvmlDevice_t and try to guess,
-        // if it fails, we'll increase the vector size
-        // I have a suspicion that the better approach should also work,
-        // but I can't test it.
-        std::vector<nvmlDevice_t> unit_devices;
-        unit_devices.resize(1);
-        unsigned int deviceCount = unit_devices.capacity();
-
-        nvmlReturn_t ret;
-        do
-        {
-            ret = nvmlUnitGetDevices(unit, &deviceCount, &unit_devices[0]);
-            if (ret == NVML_ERROR_INSUFFICIENT_SIZE)
-                unit_devices.reserve(deviceCount);
-        }
-        while (ret != NVML_ERROR_INSUFFICIENT_SIZE);
-        unit_devices.resize(deviceCount);
-
-        if (ret != NVML_SUCCESS)
-        {
-            this->initialized = false;
-            nvmlShutdown();
-            return;
-        }
-
-        // copy the devices for this unit
-        this->devices.insert(std::end(this->devices),
-                std::begin(unit_devices), std::end(unit_devices));
+        this->devices.push_back(device);
     }
 
     this->gpu_stats.resize(this->devices.size());
