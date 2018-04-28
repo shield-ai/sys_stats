@@ -8,6 +8,8 @@ find_package(catkin REQUIRED COMPONENTS
   shield_msgs
 )
 
+find_package(CUDA)
+
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES sys_stats
@@ -16,7 +18,13 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${CUDA_INCLUDE_DIRS}
 )
+
+link_directories(
+  ${CUDA_TOOLKIT_ROOT_DIR}/lib64
+  ${CUDA_TOOLKIT_ROOT_DIR}/lib64/stubs
+  ${CUDA_TOOLKIT_ROOT_DIR}/lib)
 
 # Sys stats library
 add_library(sys_stats
@@ -25,7 +33,7 @@ add_library(sys_stats
   include/sys_stats/serialization.h
 )
 
-target_link_libraries(sys_stats /usr/lib/x86_64-linux-gnu/stubs/libnvidia-ml.so)
+target_link_libraries(sys_stats nvidia-ml)
 
 # Wrap with node - the usual defaults
 add_executable(${PROJECT_NAME}_node src/sys_stats_node.cpp)
