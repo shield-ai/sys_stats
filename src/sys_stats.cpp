@@ -1136,45 +1136,53 @@ bool GpuQuery::getProcessesForDevice (nvmlDevice_t device,
         return true; // ignore if the nvml failed to initialize
 
     // get the number of the processes running
-    unsigned int numProcesses;
-    auto ret = nvmlDeviceGetComputeRunningProcesses(device,
-            &numProcesses, nullptr);
+    auto collectMethod = [this, device, &process_list](auto func){
+        unsigned int numProcesses;
+        auto ret = func(device,
+                &numProcesses, nullptr);
 
-    if (ret != NVML_ERROR_INSUFFICIENT_SIZE &&
-        ret != NVML_SUCCESS)
-    {
-        // this shouldn't happen
-        return false;
-    }
-
-    // always allocate more in case new processes are spawned
-    do 
-    {
-        if (numProcesses * 2 > this->process_infos.capacity())
+        if (ret != NVML_ERROR_INSUFFICIENT_SIZE &&
+            ret != NVML_SUCCESS)
         {
-            this->process_infos.reserve(numProcesses * 2);
+            // this shouldn't happen
+            return false;
         }
 
-        this->process_infos.resize(numProcesses * 2);
+        // always allocate more in case new processes are spawned
+        do 
+        {
+            if (numProcesses * 2 > this->process_infos.capacity())
+            {
+                this->process_infos.reserve(numProcesses * 2);
+            }
 
-        numProcesses = this->process_infos.size();
-        ret = nvmlDeviceGetComputeRunningProcesses(device,
-                &numProcesses, &this->process_infos[0]);
-    }
-    while (ret == NVML_ERROR_INSUFFICIENT_SIZE); // resize and retry on error
-    this->process_infos.clear();
-    this->process_infos.resize(numProcesses);
+            this->process_infos.resize(numProcesses * 2);
 
-    if (ret != NVML_SUCCESS)
+            numProcesses = this->process_infos.size();
+            ret = nvmlDeviceGetComputeRunningProcesses(device,
+                    &numProcesses, &this->process_infos[0]);
+        }
+        while (ret == NVML_ERROR_INSUFFICIENT_SIZE); // resize and retry on error
+        this->process_infos.clear();
+        this->process_infos.resize(numProcesses);
+
+        if (ret != NVML_SUCCESS)
+            return false;
+
+        // transform them into our list
+        // TODO: stl tranform here
+        for (const auto& info: this->process_infos)
+            process_list.push_back(sys_stats::GpuProcess{ info.pid, info.usedGpuMemory });
+    };
+
+    process_list.clear();
+
+    if (!collectMethod(nvmlDeviceGetComputeRunningProcesses))
         return false;
 
-    // transform them into our list
-    // TODO: stl tranform here
-    process_list.clear();
-    for (const auto& info: this->process_infos)
-        process_list.push_back(sys_stats::GpuProcess{ info.pid, info.usedGpuMemory });
+    if (!collectMethod(nvmlDeviceGetGraphicsRunningProcesses))
+        return false;
 
     return true;
 }
-
 }
