@@ -1139,7 +1139,7 @@ bool GpuQuery::getProcessesForDevice (nvmlDevice_t device,
         return true; // ignore if the nvml failed to initialize
 
     // get the number of the processes running
-    auto collectMethod = [this, device, &process_list](auto func){
+    auto collectMethod = [this, device, &process_list](decltype(nvmlDeviceGetComputeRunningProcesses) func){
         unsigned int numProcesses;
         auto ret = func(device,
                 &numProcesses, nullptr);
