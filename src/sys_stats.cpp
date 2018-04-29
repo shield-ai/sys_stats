@@ -1183,6 +1183,19 @@ bool GpuQuery::getProcessesForDevice (nvmlDevice_t device,
     if (!collectMethod(nvmlDeviceGetGraphicsRunningProcesses))
         return false;
 
+    // Remove duplicates
+    std::sort(std::begin(process_list), std::end(process_list),
+        [](const GpuProcess& p1, const GpuProcess& p2) {
+          return p1.pid < p2.pid;
+        });
+
+    process_list.erase(
+        std::unique(std::begin(process_list), std::end(process_list),
+                    [](const GpuProcess& p1, const GpuProcess& p2) {
+                      return p1.pid == p2.pid;
+                    }),
+        std::end(process_list));
+
     return true;
 }
 }
