@@ -173,38 +173,36 @@ struct Wifi
 
 struct GpuProcess
 {
-    unsigned int pid;
-    unsigned long memory;
+  unsigned int pid;
+  unsigned long memory;
 };
 
 struct Gpu
 {
-    float total_load;   // percent
-    float total_mem;    // percent
-    float power;        // Watts
-    float temperature;  // degrees C
-    unsigned int clock; // MHz
-    std::vector<GpuProcess> process_list;
+  float total_load;    // percent
+  float total_mem;     // percent
+  float power;         // Watts
+  float temperature;   // degrees C
+  unsigned int clock;  // MHz
+  std::vector<GpuProcess> process_list;
 };
 
 struct GpuQuery
 {
-private:
-    GpuQuery(std::vector<Gpu>& gpu_stats);
-    ~GpuQuery();
-    bool queryDevices();
-    bool getProcessesForDevice(nvmlDevice_t device,
-            std::vector<GpuProcess>& process_list);
-    bool getDeviceStats(nvmlDevice_t device,
-            Gpu& stats);
+ private:
+  GpuQuery(std::vector<Gpu>& gpu_stats);
+  ~GpuQuery();
+  bool queryDevices();
+  bool getProcessesForDevice(nvmlDevice_t device, std::vector<GpuProcess>& process_list);
+  bool getDeviceStats(nvmlDevice_t device, Gpu& stats);
 
-    // todo: support multiple devices
-    std::vector<nvmlDevice_t> devices;
-    std::vector<nvmlProcessInfo_t> process_infos;
-    std::vector<Gpu>& gpu_stats;
-    bool initialized;
+  // todo: support multiple devices
+  std::vector<nvmlDevice_t> devices;
+  std::vector<nvmlProcessInfo_t> process_infos;
+  std::vector<Gpu>& gpu_stats;
+  bool initialized;
 
-    friend struct SysStats;
+  friend struct SysStats;
 };
 
 struct SysStats
@@ -279,6 +277,6 @@ struct SysStats
 // will be averages since this function was last called. It is acceptable
 // for the first call to this function to return false.
 bool get_sys_stats(SysStats* stats);
-}
+}  // namespace sys_stats
 
 #endif

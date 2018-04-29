@@ -325,7 +325,11 @@ int Process::id()
 }
 
 SysStats::SysStats()
-  : mem_use_total(0), swap_use_total(0), previous_uptime(readuptime()), coretemp_path(get_hwmon_path()), gpu_collector(gpu_stats)
+  : mem_use_total(0)
+  , swap_use_total(0)
+  , previous_uptime(readuptime())
+  , coretemp_path(get_hwmon_path())
+  , gpu_collector(gpu_stats)
 {
   this->driver_socket = socket(AF_INET, SOCK_DGRAM, 0);
 }
@@ -353,7 +357,7 @@ bool get_sys_stats(SysStats* stats)
     return false;
 
   if (!stats->getGpuInfo())
-      return false;
+    return false;
 
   // Querying the wifi driver seems have a chance to panic the kernel and cause a hard lock up
   //if (!stats->getWifiData())
@@ -957,7 +961,7 @@ bool SysStats::getWifiData()
 
 bool SysStats::getGpuInfo()
 {
-    return this->gpu_collector.queryDevices();
+  return this->gpu_collector.queryDevices();
 }
 
 bool Wifi::queryDriver()
@@ -1025,182 +1029,169 @@ Wifi::Wifi(int driver_sock) : driver_socket(driver_sock), max_qual(0)
 {
 }
 
-GpuQuery::GpuQuery(std::vector<Gpu>& gpu_stats): gpu_stats{gpu_stats}
+GpuQuery::GpuQuery(std::vector<Gpu>& gpu_stats) : gpu_stats{gpu_stats}
 {
-    this->initialized = nvmlInit() == NVML_SUCCESS;
+  this->initialized = nvmlInit() == NVML_SUCCESS;
 
-    if (!this->initialized)
-        return;
+  if (!this->initialized)
+    return;
 
-    unsigned int device_count;
-    this->initialized = nvmlDeviceGetCount(&device_count) == NVML_SUCCESS;
+  unsigned int device_count;
+  this->initialized = nvmlDeviceGetCount(&device_count) == NVML_SUCCESS;
 
-    if (!this->initialized)
+  if (!this->initialized)
+  {
+    nvmlShutdown();
+    return;
+  }
+
+  for (unsigned int i = 0; i < device_count; i++)
+  {
+    nvmlDevice_t device;
+    if (nvmlDeviceGetHandleByIndex(i, &device) != NVML_SUCCESS)
     {
-        nvmlShutdown();
-        return;
+      this->initialized = false;
+      nvmlShutdown();
+      break;
     }
 
-    for (unsigned int i = 0; i < device_count; i++)
-    {
-        nvmlDevice_t device;
-        if (nvmlDeviceGetHandleByIndex(i, &device) != NVML_SUCCESS)
-        {
-            this->initialized = false;
-            nvmlShutdown();
-            break;
-        }
+    this->devices.push_back(device);
+  }
 
-        this->devices.push_back(device);
-    }
-
-    this->gpu_stats.resize(this->devices.size());
+  this->gpu_stats.resize(this->devices.size());
 }
 
 GpuQuery::~GpuQuery()
 {
-    // although documentation indicates that for the
-    // backwards compatibility we're can call nvmlShutdown
-    // when nvmlInit failed, there's a little point anyway
-    if (this->initialized)
-        static_cast<void>(nvmlShutdown());
+  // although documentation indicates that for the
+  // backwards compatibility we're can call nvmlShutdown
+  // when nvmlInit failed, there's a little point anyway
+  if (this->initialized)
+    static_cast<void>(nvmlShutdown());
 }
 
-bool GpuQuery::queryDevices ()
+bool GpuQuery::queryDevices()
 {
-    int i = 0;
-    for(auto it = std::begin(this->devices);
-            it != std::end(this->devices); i++, it++)
-    {
-        // gather as much as you can, do not fail, just continue
-        static_cast<void>(this->getProcessesForDevice(*it,
-                   this->gpu_stats[i].process_list));
+  int i = 0;
+  for (auto it = std::begin(this->devices); it != std::end(this->devices); i++, it++)
+  {
+    // gather as much as you can, do not fail, just continue
+    static_cast<void>(this->getProcessesForDevice(*it, this->gpu_stats[i].process_list));
 
-        static_cast<void>(this->getDeviceStats(*it, this->gpu_stats[i]));
-    }
+    static_cast<void>(this->getDeviceStats(*it, this->gpu_stats[i]));
+  }
 
-    return true;
+  return true;
 }
 
-
-bool GpuQuery::getDeviceStats(nvmlDevice_t device,
-        Gpu& stats)
+bool GpuQuery::getDeviceStats(nvmlDevice_t device, Gpu& stats)
 {
-    stats.power = 0;
-    unsigned int power_mw;
-    auto ret = nvmlDeviceGetPowerUsage(device, &power_mw);
+  stats.power = 0;
+  unsigned int power_mw;
+  auto ret = nvmlDeviceGetPowerUsage(device, &power_mw);
 
-    if (ret == NVML_SUCCESS)
+  if (ret == NVML_SUCCESS)
+  {
+    // DeviceGetPowerUsage returns power in mwatts
+    stats.power = power_mw / 1000.0;
+  }
+
+  nvmlMemory_t memory;
+  stats.total_mem = 0;
+
+  ret = nvmlDeviceGetMemoryInfo(device, &memory);
+  if (ret == NVML_SUCCESS)
+  {
+    stats.total_mem = (static_cast<float>(memory.used) / memory.total) * 100.0f;
+  }
+
+  unsigned int temperature;
+  stats.temperature = 0;
+  ret = nvmlDeviceGetTemperature(device, NVML_TEMPERATURE_GPU, &temperature);
+  if (ret == NVML_SUCCESS)
+  {
+    stats.temperature = temperature;
+  }
+
+  ret = nvmlDeviceGetClock(device, NVML_CLOCK_GRAPHICS, NVML_CLOCK_ID_CURRENT, &stats.clock);
+  if (ret != NVML_SUCCESS)
+  {
+    stats.clock = 0;
+  }
+
+  stats.total_load = 0;
+  nvmlUtilization_t utilization;
+  ret = nvmlDeviceGetUtilizationRates(device, &utilization);
+
+  if (ret == NVML_SUCCESS)
+  {
+    stats.total_load = utilization.gpu;
+  }
+
+  return true;
+}
+
+bool GpuQuery::getProcessesForDevice(nvmlDevice_t device, std::vector<GpuProcess>& process_list)
+{
+  if (!this->initialized)
+    return true;  // ignore if the nvml failed to initialize
+
+  // get the number of the processes running
+  auto collectMethod = [this, device, &process_list](decltype(nvmlDeviceGetComputeRunningProcesses) func) {
+    unsigned int numProcesses;
+    auto ret = func(device, &numProcesses, nullptr);
+
+    if (ret != NVML_ERROR_INSUFFICIENT_SIZE && ret != NVML_SUCCESS)
     {
-        // DeviceGetPowerUsage returns power in mwatts
-        stats.power = power_mw / 1000.0;
+      // this shouldn't happen
+      return false;
     }
 
-    nvmlMemory_t memory;
-    stats.total_mem = 0;
-
-    ret = nvmlDeviceGetMemoryInfo(device, &memory);
-    if (ret == NVML_SUCCESS)
+    // always allocate more in case new processes are spawned
+    do
     {
-        stats.total_mem = (static_cast<float>(memory.used) / memory.total) * 100.0f;
-    }
+      if (numProcesses * 2 > this->process_infos.capacity())
+      {
+        this->process_infos.reserve(numProcesses * 2);
+      }
 
-    unsigned int temperature;
-    stats.temperature = 0;
-    ret = nvmlDeviceGetTemperature(device, NVML_TEMPERATURE_GPU, &temperature);
-    if (ret == NVML_SUCCESS)
-    {
-        stats.temperature = temperature;
-    }
+      this->process_infos.resize(numProcesses * 2);
 
-    ret = nvmlDeviceGetClock(device, NVML_CLOCK_GRAPHICS, NVML_CLOCK_ID_CURRENT,
-            &stats.clock);
+      numProcesses = this->process_infos.size();
+      ret = nvmlDeviceGetComputeRunningProcesses(device, &numProcesses, &this->process_infos[0]);
+    } while (ret == NVML_ERROR_INSUFFICIENT_SIZE);  // resize and retry on error
+    this->process_infos.clear();
+    this->process_infos.resize(numProcesses);
+
     if (ret != NVML_SUCCESS)
-    {
-        stats.clock = 0;
-    }
+      return false;
 
-    stats.total_load = 0;
-    nvmlUtilization_t utilization;
-    ret = nvmlDeviceGetUtilizationRates(device, &utilization);
-
-    if (ret == NVML_SUCCESS)
-    {
-        stats.total_load = utilization.gpu;
-    }
+    // transform them into our list
+    // TODO: stl tranform here
+    for (const auto& info : this->process_infos)
+      process_list.push_back(GpuProcess{info.pid, info.usedGpuMemory});
 
     return true;
+  };
+
+  process_list.clear();
+
+  if (!collectMethod(nvmlDeviceGetComputeRunningProcesses))
+    return false;
+
+  if (!collectMethod(nvmlDeviceGetGraphicsRunningProcesses))
+    return false;
+
+  // Remove duplicates
+  std::sort(std::begin(process_list), std::end(process_list), [](const GpuProcess& p1, const GpuProcess& p2) {
+    return p1.pid < p2.pid;
+  });
+
+  process_list.erase(std::unique(std::begin(process_list),
+                                 std::end(process_list),
+                                 [](const GpuProcess& p1, const GpuProcess& p2) { return p1.pid == p2.pid; }),
+                     std::end(process_list));
+
+  return true;
 }
-
-bool GpuQuery::getProcessesForDevice (nvmlDevice_t device,
-        std::vector<GpuProcess>& process_list)
-{
-    if (!this->initialized)
-        return true; // ignore if the nvml failed to initialize
-
-    // get the number of the processes running
-    auto collectMethod = [this, device, &process_list](decltype(nvmlDeviceGetComputeRunningProcesses) func){
-        unsigned int numProcesses;
-        auto ret = func(device,
-                &numProcesses, nullptr);
-
-        if (ret != NVML_ERROR_INSUFFICIENT_SIZE &&
-            ret != NVML_SUCCESS)
-        {
-            // this shouldn't happen
-            return false;
-        }
-
-        // always allocate more in case new processes are spawned
-        do 
-        {
-            if (numProcesses * 2 > this->process_infos.capacity())
-            {
-                this->process_infos.reserve(numProcesses * 2);
-            }
-
-            this->process_infos.resize(numProcesses * 2);
-
-            numProcesses = this->process_infos.size();
-            ret = nvmlDeviceGetComputeRunningProcesses(device,
-                    &numProcesses, &this->process_infos[0]);
-        }
-        while (ret == NVML_ERROR_INSUFFICIENT_SIZE); // resize and retry on error
-        this->process_infos.clear();
-        this->process_infos.resize(numProcesses);
-
-        if (ret != NVML_SUCCESS)
-            return false;
-
-        // transform them into our list
-        // TODO: stl tranform here
-        for (const auto& info: this->process_infos)
-            process_list.push_back(GpuProcess{ info.pid, info.usedGpuMemory });
-
-        return true;
-    };
-
-    process_list.clear();
-
-    if (!collectMethod(nvmlDeviceGetComputeRunningProcesses))
-        return false;
-
-    if (!collectMethod(nvmlDeviceGetGraphicsRunningProcesses))
-        return false;
-
-    // Remove duplicates
-    std::sort(std::begin(process_list), std::end(process_list),
-        [](const GpuProcess& p1, const GpuProcess& p2) {
-          return p1.pid < p2.pid;
-        });
-
-    process_list.erase(
-        std::unique(std::begin(process_list), std::end(process_list),
-                    [](const GpuProcess& p1, const GpuProcess& p2) {
-                      return p1.pid == p2.pid;
-                    }),
-        std::end(process_list));
-
-    return true;
-}
-}
+}  // namespace sys_stats
