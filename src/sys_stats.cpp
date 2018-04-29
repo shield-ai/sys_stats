@@ -1041,7 +1041,7 @@ GpuQuery::GpuQuery(std::vector<Gpu>& gpu_stats): gpu_stats{gpu_stats}
         return;
     }
 
-    for (int i = 0; i < device_count; i++)
+    for (unsigned int i = 0; i < device_count; i++)
     {
         nvmlDevice_t device;
         if (nvmlDeviceGetHandleByIndex(i, &device) != NVML_SUCCESS)
