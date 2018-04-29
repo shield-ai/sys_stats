@@ -1113,9 +1113,12 @@ bool GpuQuery::getDeviceStats(nvmlDevice_t device,
         stats.temperature = temperature;
     }
 
-    stats.clock = 0;
     ret = nvmlDeviceGetClock(device, NVML_CLOCK_GRAPHICS, NVML_CLOCK_ID_CURRENT,
             &stats.clock);
+    if (ret != NVML_SUCCESS)
+    {
+        stats.clock = 0;
+    }
 
     stats.total_load = 0;
     nvmlUtilization_t utilization;
