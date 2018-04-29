@@ -1172,7 +1172,7 @@ bool GpuQuery::getProcessesForDevice (nvmlDevice_t device,
         // transform them into our list
         // TODO: stl tranform here
         for (const auto& info: this->process_infos)
-            process_list.push_back(sys_stats::GpuProcess{ info.pid, info.usedGpuMemory });
+            process_list.push_back(GpuProcess{ info.pid, info.usedGpuMemory });
     };
 
     process_list.clear();
