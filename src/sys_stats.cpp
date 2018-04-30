@@ -1177,8 +1177,6 @@ bool GpuQuery::getProcessesForDevice(nvmlDevice_t device, std::vector<GpuProcess
       numProcesses = this->process_infos.size();
       ret = func(device, &numProcesses, &this->process_infos[0]);
     } while (ret == NVML_ERROR_INSUFFICIENT_SIZE);  // resize and retry on error
-    this->process_infos.clear();
-    this->process_infos.resize(numProcesses);
 
     if (ret != NVML_SUCCESS)
       return false;
