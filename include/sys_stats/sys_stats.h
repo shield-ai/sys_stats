@@ -4,7 +4,10 @@
 #include <string>
 #include <vector>
 #include <chrono>
+
+#ifdef HAVE_CUDA
 #include <nvml.h>
+#endif
 
 namespace sys_stats
 {
@@ -171,6 +174,7 @@ struct Wifi
   bool mark;
 };
 
+#ifdef HAVE_CUDA
 struct GpuProcess
 {
   unsigned int pid;
@@ -204,6 +208,7 @@ struct GpuQuery
 
   friend struct SysStats;
 };
+#endif
 
 struct SysStats
 {
@@ -215,7 +220,9 @@ struct SysStats
   float cpu_use_total;
   float mem_use_total;
   float swap_use_total;
+#ifdef HAVE_CUDA
   std::vector<Gpu> gpu_stats;
+#endif
 
   SysStats();
   ~SysStats();
@@ -242,8 +249,6 @@ struct SysStats
   bool getDiskData();
   // cppcheck-suppress unusedPrivateFunction
   bool getWifiData();
-  // cppcheck-suppress unusedPrivateFunction
-  bool getGpuInfo();
 
   uptime previous_uptime;
   uptime current_uptime;
@@ -268,8 +273,13 @@ struct SysStats
   std::vector<unsigned long> previous_cpu_idle;
   // Socket for querying the wifi driver
   int driver_socket;
+
+#ifdef HAVE_CUDA
+  // cppcheck-suppress unusedPrivateFunction
+  bool getGpuInfo();
   // Object to query the GPU
   GpuQuery gpu_collector;
+#endif
 };
 
 // Upon return, `stats` will be populated, or function will return

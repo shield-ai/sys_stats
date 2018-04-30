@@ -18,8 +18,11 @@
 #include <sys/statvfs.h>
 #include <sys/socket.h>
 #include <linux/wireless.h>
-#include <nvml.h>
 #include "sys_stats/sys_stats.h"
+
+#ifdef HAVE_CUDA
+#include <nvml.h>
+#endif
 
 namespace sys_stats
 {
@@ -329,7 +332,9 @@ SysStats::SysStats()
   , swap_use_total(0)
   , previous_uptime(readuptime())
   , coretemp_path(get_hwmon_path())
+#ifdef HAVE_CUDA
   , gpu_collector(gpu_stats)
+#endif
 {
   this->driver_socket = socket(AF_INET, SOCK_DGRAM, 0);
 }
@@ -356,6 +361,7 @@ bool get_sys_stats(SysStats* stats)
   if (!stats->get_processes())
     return false;
 
+#ifdef HAVE_CUDA
   if (!stats->getGpuInfo())
   {
     std::cout << "Failed to get GPU stats" << std::endl;
@@ -375,6 +381,7 @@ bool get_sys_stats(SysStats* stats)
     std::cout << "Pid: " << stats->gpu_stats[0].process_list[i].pid << "\n"
     << "Mem: " << stats->gpu_stats[0].process_list[i].memory << std::endl;
   }
+#endif
 
   // Querying the wifi driver seems have a chance to panic the kernel and cause a hard lock up
   //if (!stats->getWifiData())
@@ -976,11 +983,6 @@ bool SysStats::getWifiData()
   return true;
 }
 
-bool SysStats::getGpuInfo()
-{
-  return this->gpu_collector.queryDevices();
-}
-
 bool Wifi::queryDriver()
 {
   static iwreq driver_rq;
@@ -1044,6 +1046,12 @@ bool Wifi::queryDriver()
 
 Wifi::Wifi(int driver_sock) : driver_socket(driver_sock), max_qual(0)
 {
+}
+
+#ifdef HAVE_CUDA
+bool SysStats::getGpuInfo()
+{
+  return this->gpu_collector.queryDevices();
 }
 
 GpuQuery::GpuQuery(std::vector<Gpu>& gpu_stats) : gpu_stats{gpu_stats}
@@ -1202,4 +1210,6 @@ bool GpuQuery::getProcessesForDevice(nvmlDevice_t device, std::vector<GpuProcess
 
   return true;
 }
+#endif // HAVE_CUDA
+
 }  // namespace sys_stats
