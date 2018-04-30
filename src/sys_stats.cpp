@@ -1164,17 +1164,10 @@ bool GpuQuery::getProcessesForDevice(nvmlDevice_t device, std::vector<GpuProcess
       return false;
     }
 
-    // always allocate more in case new processes are spawned
+    // If a new process got spawned, we will get NVML_ERROR_INSUFFICIENT_SIZE and resize
     do
     {
-      if (numProcesses * 2 > this->process_infos.capacity())
-      {
-        this->process_infos.reserve(numProcesses * 2);
-      }
-
-      this->process_infos.resize(numProcesses * 2);
-
-      numProcesses = this->process_infos.size();
+      this->process_infos.resize(numProcesses);
       ret = func(device, &numProcesses, &this->process_infos[0]);
     } while (ret == NVML_ERROR_INSUFFICIENT_SIZE);  // resize and retry on error
 
