@@ -357,7 +357,24 @@ bool get_sys_stats(SysStats* stats)
     return false;
 
   if (!stats->getGpuInfo())
+  {
+    std::cout << "Failed to get GPU stats" << std::endl;
     return false;
+  }
+
+  std::cout << "GPU stats:\n"
+  << "Total memory: " << stats->gpu_stats[0].total_mem << "\n"
+  << "Total load: " << stats->gpu_stats[0].total_load << "\n"
+  << "Power: " << stats->gpu_stats[0].power << "\n"
+  << "Temperature: " << stats->gpu_stats[0].temperature << "\n"
+  << "Clock: " << stats->gpu_stats[0].clock << std::endl;
+
+  std::cout << "Per Process:" << stats->gpu_stats[0].process_list.size() << std::endl;
+  for (uint32_t i = 0; i < stats->gpu_stats[0].process_list.size(); i++)
+  {
+    std::cout << "Pid: " << stats->gpu_stats[0].process_list[i].pid << "\n"
+    << "Mem: " << stats->gpu_stats[0].process_list[i].memory << std::endl;
+  }
 
   // Querying the wifi driver seems have a chance to panic the kernel and cause a hard lock up
   //if (!stats->getWifiData())
@@ -1158,7 +1175,7 @@ bool GpuQuery::getProcessesForDevice(nvmlDevice_t device, std::vector<GpuProcess
       this->process_infos.resize(numProcesses * 2);
 
       numProcesses = this->process_infos.size();
-      ret = nvmlDeviceGetComputeRunningProcesses(device, &numProcesses, &this->process_infos[0]);
+      ret = func(device, &numProcesses, &this->process_infos[0]);
     } while (ret == NVML_ERROR_INSUFFICIENT_SIZE);  // resize and retry on error
     this->process_infos.clear();
     this->process_infos.resize(numProcesses);
