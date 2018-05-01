@@ -1101,9 +1101,9 @@ bool GpuQuery::queryDevices()
   for (auto it = std::begin(this->devices); it != std::end(this->devices); i++, it++)
   {
     // gather as much as you can, do not fail, just continue
-    static_cast<void>(this->getProcessesForDevice(*it, this->gpu_stats[i].process_list));
-
     static_cast<void>(this->getDeviceStats(*it, this->gpu_stats[i]));
+
+    static_cast<void>(this->getProcessesForDevice(*it, this->gpu_stats[i]));
   }
 
   return true;
@@ -1123,11 +1123,13 @@ bool GpuQuery::getDeviceStats(nvmlDevice_t device, Gpu& stats)
 
   nvmlMemory_t memory;
   stats.total_mem = 0;
+  stats.device_total_memory = 0;
 
   ret = nvmlDeviceGetMemoryInfo(device, &memory);
   if (ret == NVML_SUCCESS)
   {
     stats.total_mem = (static_cast<float>(memory.used) / memory.total) * 100.0f;
+    stats.device_total_memory = memory.total;
   }
 
   unsigned int temperature;
@@ -1156,13 +1158,13 @@ bool GpuQuery::getDeviceStats(nvmlDevice_t device, Gpu& stats)
   return true;
 }
 
-bool GpuQuery::getProcessesForDevice(nvmlDevice_t device, std::vector<GpuProcess>& process_list)
+bool GpuQuery::getProcessesForDevice(nvmlDevice_t device, Gpu& gpu_stats)
 {
   if (!this->initialized)
     return true;  // ignore if the nvml failed to initialize
 
   // get the number of the processes running
-  auto collectMethod = [this, device, &process_list](decltype(nvmlDeviceGetComputeRunningProcesses) func) {
+  auto collectMethod = [this, device, &gpu_stats](decltype(nvmlDeviceGetComputeRunningProcesses) func) {
     unsigned int numProcesses = 0;
     auto ret = func(device, &numProcesses, nullptr);
 
@@ -1185,12 +1187,17 @@ bool GpuQuery::getProcessesForDevice(nvmlDevice_t device, std::vector<GpuProcess
     // transform them into our list
     // TODO: stl tranform here
     for (const auto& info : this->process_infos)
-      process_list.push_back(GpuProcess{info.pid, info.usedGpuMemory});
+    {
+      float memory_percentage = gpu_stats.device_total_memory
+                                    ? ((static_cast<float>(info.usedGpuMemory) / gpu_stats.device_total_memory) * 100.f)
+                                    : -1;
+      gpu_stats.process_list.push_back(GpuProcess{info.pid, memory_percentage});
+    }
 
     return true;
   };
 
-  process_list.clear();
+  gpu_stats.process_list.clear();
 
   if (!collectMethod(nvmlDeviceGetComputeRunningProcesses))
     return false;
@@ -1199,17 +1206,17 @@ bool GpuQuery::getProcessesForDevice(nvmlDevice_t device, std::vector<GpuProcess
     return false;
 
   // Remove duplicates
-  std::sort(std::begin(process_list), std::end(process_list), [](const GpuProcess& p1, const GpuProcess& p2) {
-    return p1.pid < p2.pid;
-  });
+  std::sort(std::begin(gpu_stats.process_list),
+            std::end(gpu_stats.process_list),
+            [](const GpuProcess& p1, const GpuProcess& p2) { return p1.pid < p2.pid; });
 
-  process_list.erase(std::unique(std::begin(process_list),
-                                 std::end(process_list),
-                                 [](const GpuProcess& p1, const GpuProcess& p2) { return p1.pid == p2.pid; }),
-                     std::end(process_list));
+  gpu_stats.process_list.erase(std::unique(std::begin(gpu_stats.process_list),
+                                           std::end(gpu_stats.process_list),
+                                           [](const GpuProcess& p1, const GpuProcess& p2) { return p1.pid == p2.pid; }),
+                               std::end(gpu_stats.process_list));
 
   return true;
 }
-#endif // ENABLE_GPU_STATS
+#endif  // ENABLE_GPU_STATS
 
 }  // namespace sys_stats

@@ -178,7 +178,7 @@ struct Wifi
 struct GpuProcess
 {
   unsigned int pid;
-  unsigned long memory;
+  float memory;  // percent
 };
 
 struct Gpu
@@ -189,6 +189,10 @@ struct Gpu
   float temperature;   // degrees C
   unsigned int clock;  // MHz
   std::vector<GpuProcess> process_list;
+
+ private:
+  unsigned long long device_total_memory;
+  friend struct GpuQuery;
 };
 
 struct GpuQuery
@@ -197,7 +201,7 @@ struct GpuQuery
   GpuQuery(std::vector<Gpu>& gpu_stats);
   ~GpuQuery();
   bool queryDevices();
-  bool getProcessesForDevice(nvmlDevice_t device, std::vector<GpuProcess>& process_list);
+  bool getProcessesForDevice(nvmlDevice_t device, Gpu& gpu_stats);
   bool getDeviceStats(nvmlDevice_t device, Gpu& stats);
 
   // todo: support multiple devices
