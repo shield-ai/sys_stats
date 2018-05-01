@@ -1163,7 +1163,7 @@ bool GpuQuery::getProcessesForDevice(nvmlDevice_t device, std::vector<GpuProcess
 
   // get the number of the processes running
   auto collectMethod = [this, device, &process_list](decltype(nvmlDeviceGetComputeRunningProcesses) func) {
-    unsigned int numProcesses;
+    unsigned int numProcesses = 0;
     auto ret = func(device, &numProcesses, nullptr);
 
     if (ret != NVML_ERROR_INSUFFICIENT_SIZE && ret != NVML_SUCCESS)
