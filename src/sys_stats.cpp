@@ -363,24 +363,7 @@ bool get_sys_stats(SysStats* stats)
 
 #ifdef ENABLE_GPU_STATS
   if (!stats->getGpuInfo())
-  {
-    std::cout << "Failed to get GPU stats" << std::endl;
     return false;
-  }
-
-  std::cout << "GPU stats:\n"
-  << "Total memory: " << stats->gpu_stats[0].total_mem << "\n"
-  << "Total load: " << stats->gpu_stats[0].total_load << "\n"
-  << "Power: " << stats->gpu_stats[0].power << "\n"
-  << "Temperature: " << stats->gpu_stats[0].temperature << "\n"
-  << "Clock: " << stats->gpu_stats[0].clock << std::endl;
-
-  std::cout << "Per Process:" << stats->gpu_stats[0].process_list.size() << std::endl;
-  for (uint32_t i = 0; i < stats->gpu_stats[0].process_list.size(); i++)
-  {
-    std::cout << "Pid: " << stats->gpu_stats[0].process_list[i].pid << "\n"
-    << "Mem: " << stats->gpu_stats[0].process_list[i].memory << std::endl;
-  }
 #endif
 
   // Querying the wifi driver seems have a chance to panic the kernel and cause a hard lock up
