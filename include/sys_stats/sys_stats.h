@@ -5,7 +5,7 @@
 #include <vector>
 #include <chrono>
 
-#ifdef HAVE_CUDA
+#ifdef ENABLE_GPU_STATS
 #include <nvml.h>
 #endif
 
@@ -174,7 +174,7 @@ struct Wifi
   bool mark;
 };
 
-#ifdef HAVE_CUDA
+#ifdef ENABLE_GPU_STATS
 struct GpuProcess
 {
   unsigned int pid;
@@ -220,7 +220,7 @@ struct SysStats
   float cpu_use_total;
   float mem_use_total;
   float swap_use_total;
-#ifdef HAVE_CUDA
+#ifdef ENABLE_GPU_STATS
   std::vector<Gpu> gpu_stats;
 #endif
 
@@ -274,7 +274,7 @@ struct SysStats
   // Socket for querying the wifi driver
   int driver_socket;
 
-#ifdef HAVE_CUDA
+#ifdef ENABLE_GPU_STATS
   // cppcheck-suppress unusedPrivateFunction
   bool getGpuInfo();
   // Object to query the GPU

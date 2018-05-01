@@ -30,7 +30,7 @@ if (CUDA_FOUND)
       ${CUDA_INCLUDE_DIRS}
   )
 
-  add_definitions(-DHAVE_CUDA)
+  add_definitions(-DENABLE_GPU_STATS)
 endif()
 
 # Sys stats library

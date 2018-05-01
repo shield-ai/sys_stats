@@ -20,7 +20,7 @@
 #include <linux/wireless.h>
 #include "sys_stats/sys_stats.h"
 
-#ifdef HAVE_CUDA
+#ifdef ENABLE_GPU_STATS
 #include <nvml.h>
 #endif
 
@@ -332,7 +332,7 @@ SysStats::SysStats()
   , swap_use_total(0)
   , previous_uptime(readuptime())
   , coretemp_path(get_hwmon_path())
-#ifdef HAVE_CUDA
+#ifdef ENABLE_GPU_STATS
   , gpu_collector(gpu_stats)
 #endif
 {
@@ -361,7 +361,7 @@ bool get_sys_stats(SysStats* stats)
   if (!stats->get_processes())
     return false;
 
-#ifdef HAVE_CUDA
+#ifdef ENABLE_GPU_STATS
   if (!stats->getGpuInfo())
   {
     std::cout << "Failed to get GPU stats" << std::endl;
@@ -1048,7 +1048,7 @@ Wifi::Wifi(int driver_sock) : driver_socket(driver_sock), max_qual(0)
 {
 }
 
-#ifdef HAVE_CUDA
+#ifdef ENABLE_GPU_STATS
 bool SysStats::getGpuInfo()
 {
   return this->gpu_collector.queryDevices();
@@ -1210,6 +1210,6 @@ bool GpuQuery::getProcessesForDevice(nvmlDevice_t device, std::vector<GpuProcess
 
   return true;
 }
-#endif // HAVE_CUDA
+#endif // ENABLE_GPU_STATS
 
 }  // namespace sys_stats
